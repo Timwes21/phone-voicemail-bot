@@ -37,9 +37,10 @@ async def agent(req: Request):
         
     )
     result = chain.invoke(user_input)
+    print(result)
     response = VoiceResponse()
     response.say(result)
-    return Response(content=str(response), media_type="application/xml")
+    return Response(content=str(response['text']), media_type="application/xml")
     
 if __name__ == "__main__":
     import uvicorn
