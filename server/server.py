@@ -41,4 +41,7 @@ async def agent(req: Request):
     response.say(result)
     return Response(content=str(response), media_type="application/xml")
     
-    
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app)
+        
