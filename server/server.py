@@ -12,10 +12,15 @@ load_dotenv()
 app = FastAPI()
 api_key = os.environ.get("API_KEY")
 llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", api_key=api_key)
+
+
+calls = {}
+
 @app.post("/agent")
 async def agent(req: Request):
     form = await req.form()
     user_input = form.get("SpeechResult", "")
+    call_id = form.get("CallSid")
     
     if not user_input:
         response = VoiceResponse()
@@ -28,7 +33,11 @@ async def agent(req: Request):
         MessagesPlaceholder(variable_name="history", return_messages=True),
         ("human", "{input}")
     ])
-    memory = ConversationBufferMemory(memory_key="history", return_messages=True)
+    
+    if call_id not in calls:
+        calls[call_id] = ConversationBufferMemory(memory_key="history", return_messages=True)
+    
+    memory = calls[call_id]
     chain = LLMChain(
         llm=llm,
         prompt=prompt,
@@ -40,6 +49,7 @@ async def agent(req: Request):
     print(result)
     response = VoiceResponse()
     response.say(result['text'])
+    response.gather(input="speech", timeout=5)
     return Response(content=str(response), media_type="application/xml")
     
 if __name__ == "__main__":
