@@ -53,14 +53,14 @@ def get_agent(form):
     )
 
     
-    response = chain_with_history.invoke(
+    reply = chain_with_history.invoke(
         {"input": user_input},
         config={"configurable": {"session_id": call_id}}
     )
-    print(response.output)
-    if response.action == "hang_up":
+    print(reply.output)
+    if reply.action == "hang_up":
         del calls[call_id]
     response = VoiceResponse()
-    response.say(response.output)
+    response.say(reply.output)
     response.gather(input="speech", timeout=5)
     return response
