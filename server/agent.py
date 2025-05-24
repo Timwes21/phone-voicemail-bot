@@ -22,6 +22,23 @@ def get_memory(call_id: str):
             memory_key="history", return_messages=True
         ).chat_memory
     return calls[call_id]
+parser = PydanticOutputParser(pydantic_object=State)
+instructions = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are an ai agent that takes the place of a voicemail for my business, tell customers that they can either schedule a call back by me, or you can pass the message to you and you'll pass the message to me " + instructions),
+    MessagesPlaceholder(variable_name="history", return_messages=True),
+    ("human", "{input}")
+])
+
+chain = prompt | llm | parser
+chain_with_history = RunnableWithMessageHistory(
+    chain,
+    get_session_history=get_memory,
+    input_messages_key="input",
+    history_messages_key="history"
+)
+
+    
 
 
 def get_agent(form):
@@ -36,23 +53,6 @@ def get_agent(form):
         response.gather(input="speech", timeout=5)
         return response
 
-    parser = PydanticOutputParser(pydantic_object=State)
-    instructions = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an ai agent that takes the place of a voicemail for my business, tell customers that they can either schedule a call back by me, or you can pass the message to you and you'll pass the message to me " + instructions),
-        MessagesPlaceholder(variable_name="history", return_messages=True),
-        ("human", "{input}")
-    ])
-    
-    chain = prompt | llm | parser
-    chain_with_history = RunnableWithMessageHistory(
-        chain,
-        get_session_history=get_memory,
-        input_messages_key="input",
-        history_messages_key="history"
-    )
-
-    
     reply = chain_with_history.invoke(
         {"input": user_input},
         config={"configurable": {"session_id": call_id}}
