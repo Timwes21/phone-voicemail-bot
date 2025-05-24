@@ -13,8 +13,6 @@ class State(BaseModel):
     output: str
     action: Literal["keep_talking", "hang_up"]
 
-class Actions(TypedDict):
-    action: Literal["schedule_callback", "pass_message", "no_action"]
 
 
 calls = {}
@@ -41,7 +39,7 @@ def get_agent(form):
     parser = PydanticOutputParser(pydantic_object=State)
     
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an ai agent that takes the place of a voicemail for my business, tell customers that they can either schedule a call back by me, or you can pass the message to you and you'll pass the message to me", parser.get_format_instructions()),
+        ("system", "You are an ai agent that takes the place of a voicemail for my business, tell customers that they can either schedule a call back by me, or you can pass the message to you and you'll pass the message to me " + parser.get_format_instructions()),
         MessagesPlaceholder(variable_name="history", return_messages=True),
         ("human", "{input}")
     ])
