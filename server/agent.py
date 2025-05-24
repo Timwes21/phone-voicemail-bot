@@ -8,7 +8,9 @@ from llm import llm
 from pydantic import BaseModel
 from typing_extensions import TypedDict, Literal
 import os
+from dotenv import load_dotenv
 from openai import OpenAI
+load_dotenv()
 api_key = os.environ["OPENAI_KEY"]
 client = OpenAI(api_key=api_key)
 
