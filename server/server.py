@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import Response
-from agent import agent
+from agent import get_agent
 
 
 app = FastAPI()
