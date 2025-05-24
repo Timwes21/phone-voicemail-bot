@@ -70,5 +70,5 @@ while True:
         {"input": user_input},
         config={"configurable": {"session_id": "call123"}}
 )
-    print(response) 
+    print(response.output) 
 

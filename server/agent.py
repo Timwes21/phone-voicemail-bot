@@ -61,6 +61,6 @@ def get_agent(form):
     if response.action == "hang_up":
         del calls[call_id]
     response = VoiceResponse()
-    response.say(response.content)
+    response.say(response.output)
     response.gather(input="speech", timeout=5)
     return response
