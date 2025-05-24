@@ -26,7 +26,7 @@ def get_memory(call_id: str):
     return calls[call_id]
 
 
-def agent(form):
+def get_agent(form):
     print(form)
     print(type(form))
     user_input = form.get("SpeechResult", "")
