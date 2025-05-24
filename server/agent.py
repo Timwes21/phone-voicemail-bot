@@ -9,8 +9,8 @@ from pydantic import BaseModel
 from typing_extensions import TypedDict, Literal
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
 load_dotenv()
+from openai import OpenAI
 api_key = os.environ["OPENAI_KEY"]
 client = OpenAI(api_key=api_key)
 
@@ -48,6 +48,6 @@ def get_agent(form):
 
     
     response = VoiceResponse()
-    response.say(response.output_text)
+    response.say(reply.output_text)
     response.gather(input="speech", timeout=5)
     return response
