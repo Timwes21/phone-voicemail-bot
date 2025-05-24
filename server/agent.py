@@ -31,7 +31,9 @@ def get_agent(form):
         response.gather(input="speech", timeout=5)
         return response
 
-
+    if call_id not in history:
+        history[call_id] = []
+        
     history[call_id].append({"role": "user", "content": user_input}) 
 
     reply = client.responses.create(
