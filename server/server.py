@@ -9,6 +9,8 @@ app = FastAPI()
 
 @app.post("/agent")
 async def agent(req: Request):
+    data = req.json()
+    print(data)
     form = await req.form()
     response = await agent(form)    
     return Response(content=str(response), media_type="application/xml")
