@@ -44,10 +44,9 @@ def get_agent(form):
     
     history[call_id] += [{"role": i.role, "content": i.content} for i in reply.output]    
 
-    print(reply.output_text)
 
     
     response = VoiceResponse()
     response.say(reply.output_text)
-    response.gather(input="speech", timeout=5)
+    response.gather(input="speech", timeout=2)
     return response
