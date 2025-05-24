@@ -37,9 +37,9 @@ def get_agent(form):
         return response
 
     parser = PydanticOutputParser(pydantic_object=State)
-    
+    instructions = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an ai agent that takes the place of a voicemail for my business, tell customers that they can either schedule a call back by me, or you can pass the message to you and you'll pass the message to me " + parser.get_format_instructions()),
+        ("system", "You are an ai agent that takes the place of a voicemail for my business, tell customers that they can either schedule a call back by me, or you can pass the message to you and you'll pass the message to me " + instructions),
         MessagesPlaceholder(variable_name="history", return_messages=True),
         ("human", "{input}")
     ])
