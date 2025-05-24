@@ -8,8 +8,8 @@ class State(TypedDict):
     output: str
     
 class Routes(TypedDict):
-    action: Literal["schedule_callback", "pass_message", "no_action"]
-    
+    action: Literal["schedule_callback", "pass_message"]
+        
     
 action_router = llm.with_structured_output(Routes)
     
@@ -35,5 +35,5 @@ builder = (
 
 
 
-
+builder.compile()
 

@@ -7,45 +7,21 @@ from twilio.rest import Client
 from llm import llm
 from pydantic import BaseModel
 from typing_extensions import TypedDict, Literal
-
-class State(BaseModel):
-    input: str
-    output: str
-    action: Literal["keep_talking", "hang_up"]
-
+import os
+from openai import OpenAI
+api_key = os.environ["OPENAI_KEY"]
+client = OpenAI(api_key=api_key)
 
 
-calls = {}
-def get_memory(call_id: str):
-    if call_id not in calls:
-        calls[call_id] = ConversationBufferMemory(
-            memory_key="history", return_messages=True
-        ).chat_memory
-    return calls[call_id]
-parser = PydanticOutputParser(pydantic_object=State)
-instructions = parser.get_format_instructions().replace("{", "{{").replace("}", "}}")
-prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an ai agent that takes the place of a voicemail for my business, tell customers that they can either schedule a call back by me, or you can pass the message to you and you'll pass the message to me " + instructions),
-    MessagesPlaceholder(variable_name="history", return_messages=True),
-    ("human", "{input}")
-])
 
-chain = prompt | llm | parser
-chain_with_history = RunnableWithMessageHistory(
-    chain,
-    get_session_history=get_memory,
-    input_messages_key="input",
-    history_messages_key="history"
-)
+history = {}
 
     
 
 
 def get_agent(form):
-    print(form)
-    print(type(form))
     user_input = form.get("SpeechResult", "")
-    call_id = form.get("CallSid")
+    call_id = form.get("historyid")
     
     if not user_input:
         response = VoiceResponse()
@@ -53,14 +29,21 @@ def get_agent(form):
         response.gather(input="speech", timeout=5)
         return response
 
-    reply = chain_with_history.invoke(
-        {"input": user_input},
-        config={"configurable": {"session_id": call_id}}
+
+    history[call_id].append({"role": "user", "content": user_input}) 
+
+    reply = client.responses.create(
+        model="gpt-4o-mini",
+        instructions="you are an agent that takes the place of the my phone voicemail",
+        input=history[call_id]
     )
-    print(reply.output)
-    if reply.action == "hang_up":
-        del calls[call_id]
+    
+    history[call_id] += [{"role": i.role, "content": i.content} for i in reply.output]    
+
+    print(reply.output_text)
+
+    
     response = VoiceResponse()
-    response.say(reply.output)
+    response.say(response.output_text)
     response.gather(input="speech", timeout=5)
     return response
