@@ -55,6 +55,7 @@ async def talk_to_agent(ws: WebSocket):
                             transcript = data["channel"]["alternatives"][0].get("transcript", "")
                             if transcript:
                                 print("User said:", transcript)
+                                print(transcript)
                                 # Get LLM response
                                 response = await get_agent(transcript)
                                 print("LLM says:", response)
