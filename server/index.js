@@ -1,12 +1,12 @@
+import Fastify from 'fastify';
+import WebSocket from 'ws';
+import fs from 'fs';
+import dotenv from 'dotenv';
+import fastifyFormBody from '@fastify/formbody';
+import fastifyWs from '@fastify/websocket';
 try{
 
 
-    import Fastify from 'fastify';
-    import WebSocket from 'ws';
-    import fs from 'fs';
-    import dotenv from 'dotenv';
-    import fastifyFormBody from '@fastify/formbody';
-    import fastifyWs from '@fastify/websocket';
     // Load environment variables from .env file
     dotenv.config();
     // Retrieve the OpenAI API key from environment variables. You must have OpenAI Realtime API access.
