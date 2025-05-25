@@ -1,14 +1,15 @@
-FROM python:3.12-slim
+FROM node:22.16-slim
 
 WORKDIR /app
 
-COPY requirements.txt ./
+COPY package.json ./
 
-RUN pip install --no-cache -r requirements.txt
+RUN npm cli --omit=dev
 
-COPY . .
+USER node
 
-EXPOSE 8000
+COPY . . 
 
-CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 3000
 
+CMD node server.js

@@ -1,0 +1,7 @@
+.env
+
+myenv/
+
+package-lock.json/
+
+node_modules/
