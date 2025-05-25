@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "dependencies": {
     "@fastify/formbody": "^8.0.2",
     "@fastify/websocket": "^11.0.2",
