@@ -2,7 +2,7 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain.output_parsers import PydanticOutputParser
-from twilio.twiml.voice_response import VoiceResponse
+from twilio.twiml.voice_response import VoiceResponse, Start
 from twilio.rest import Client
 from llm import llm
 from pydantic import BaseModel
@@ -27,6 +27,9 @@ def get_agent(form):
     
     if not user_input:
         response = VoiceResponse()
+        start = Start()
+        start.stream(url="wss://phone-voicemail-bot-production.up.railway.app/ws")
+        response.append(start)
         response.say("hello this is Tim's Voicemail Assistant")
         response.gather(input="speech", timeout=5)
         return response
@@ -48,5 +51,6 @@ def get_agent(form):
     
     response = VoiceResponse()
     response.say(reply.output_text)
+    response.stream
     response.gather(input="speech", timeout=2)
     return response
