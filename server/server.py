@@ -67,6 +67,7 @@ async def talk_to_agent(ws: WebSocket):
                 if data["event"] == "media":
                     decoded_audio = base64.b64decode(data["media"]["payload"])
                     audio = audioop.ulaw2lin(decoded_audio, 2)
+                    print(audio)
                     response = await dg_ws.send(audio)
                     print(response)
                     
