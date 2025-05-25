@@ -7,8 +7,8 @@ import fastifyWs from '@fastify/websocket';
 // Load environment variables from .env file
 dotenv.config();
 // Retrieve the OpenAI API key from environment variables. You must have OpenAI Realtime API access.
-const { OPENAI_API_KEY } = process.env;
-if (!OPENAI_API_KEY) {
+const { OPENAI_KEY } = process.env;
+if (!OPENAI_KEY) {
     console.error('Missing OpenAI API key. Please set it in the .env file.');
     process.exit(1);
 }
@@ -58,7 +58,7 @@ fastify.register(async (fastify) => {
         console.log('Client connected');
         const openAiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
             headers: {
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
+                Authorization: `Bearer ${OPENAI_KEY}`,
                 "OpenAI-Beta": "realtime=v1"
             }
         });
