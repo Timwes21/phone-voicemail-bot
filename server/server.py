@@ -51,11 +51,11 @@ async def talk_to_agent(ws: WebSocket):
                 async def handle_transcripts():
                     async for message in dg_ws:
                         data = json.loads(message)
+                        print(data)
                         if "channel" in data:
                             transcript = data["channel"]["alternatives"][0].get("transcript", "")
                             if transcript:
                                 print("User said:", transcript)
-                                print(transcript)
                                 # Get LLM response
                                 response = await get_agent(transcript)
                                 print("LLM says:", response)
@@ -67,7 +67,6 @@ async def talk_to_agent(ws: WebSocket):
                 if data["event"] == "media":
                     decoded_audio = base64.b64decode(data["media"]["payload"])
                     audio = audioop.ulaw2lin(decoded_audio, 2)
-                    print(audio)
                     response = await dg_ws.send(audio)
                     print(response)
                     
