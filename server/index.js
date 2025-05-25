@@ -40,20 +40,24 @@ fastify.get('/', async (request, reply) => {
 });
 // Route for Twilio to handle incoming and outgoing calls
 // <Say> punctuation to improve text-to-speech translation
-fastify.all('/incoming-call', async (request, reply) => {
-    const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
-                          <Response>
-                              <Say>Please wait while we connect your call to the A. I. voice assistant, powered by Twilio and the Open-A.I. Realtime API</Say>
-                              <Pause length="1"/>
-                              <Say>O.K. you can start talking!</Say>
-                              <Connect>
-                                  <Stream url="wss://phone-voicemail-bot-production.up.railway.app/media-stream" />
-                              </Connect>
-                          </Response>`;
-    reply.type('text/xml').send(twimlResponse);
-});
-
-
+try{
+    fastify.all('/incoming-call', async (request, reply) => {
+        const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+        <Response>
+        <Say>Please wait while we connect your call to the A. I. voice assistant, powered by Twilio and the Open-A.I. Realtime API</Say>
+        <Pause length="1"/>
+        <Say>O.K. you can start talking!</Say>
+        <Connect>
+        <Stream url="wss://phone-voicemail-bot-production.up.railway.app/media-stream" />
+        </Connect>
+        </Response>`;
+        reply.type('text/xml').send(twimlResponse);
+    });   
+}
+catch(err){
+    console.log(err);
+    
+}
 // WebSocket route for media-stream
 fastify.register(async (fastify) => {
     fastify.get('/media-stream', { websocket: true }, (connection, req) => {
