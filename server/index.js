@@ -4,7 +4,7 @@ import fs from 'fs';
 import dotenv from 'dotenv';
 import fastifyFormBody from '@fastify/formbody';
 import fastifyWs from '@fastify/websocket';
-import { OpenAIWS } from './openai-websockets';
+import { OpenAIWS } from './openai-websockets.js';
 try{
 
 
