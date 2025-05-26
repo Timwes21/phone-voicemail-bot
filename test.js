@@ -1,4 +1,5 @@
-let myArray = [1,5,7,9,0];
+function add(num1, num2){
+    return num1+num2
+}
 
-myArray += [1,5, 8, 9];
-console.log(typeof myArray);
+const add = (num1, num2) => num2 + num2
