@@ -1,0 +1,5 @@
+                         ____ schedule callback -> send text to both me and caller reminding them
+                        |
+convo -> summaraizes convo -- pass message ->
+                        |____
+                             do nothing 

@@ -1,111 +1,140 @@
 import Fastify from 'fastify';
 import WebSocket from 'ws';
-import fs from 'fs';
+import { connect } from '@ngrok/ngrok';
 import dotenv from 'dotenv';
 import fastifyFormBody from '@fastify/formbody';
 import fastifyWs from '@fastify/websocket';
-import { OpenAIWS } from './openai-websockets.js';
+import { getTwimlResponse, sendSessionUpdate } from './helper.js';
 try{
 
+    const log = (e) => console.log(e);
+    const AgentActionsApi = "http://127.0.0.1:3000";
 
-    // Load environment variables from .env file
+
     dotenv.config();
-    // Retrieve the OpenAI API key from environment variables. You must have OpenAI Realtime API access.
     const { OPENAI_KEY } = process.env;
-    if (!OPENAI_KEY) {
-        console.error('Missing OpenAI API key. Please set it in the .env file.');
-        process.exit(1);
-    }
-    // Initialize Fastify
+    const { NGROK_TOKEN } = process.env
+    const PORT = process.env.PORT || 5050; 
+    OPENAI_KEY ?? console.error('Missing OpenAI API key. Please set it in the .env file.');
+    
     const fastify = Fastify();
     fastify.register(fastifyFormBody);
     fastify.register(fastifyWs);
 
-    // Constants
-    const SYSTEM_MESSAGE = 'You are a helpful and bubbly AI assistant who loves to chat about anything the user is interested about and is prepared to offer them facts. You have a penchant for dad jokes, owl jokes, and rickrolling – subtly. Always stay positive, but work in a joke when appropriate.';
-    const VOICE = 'alloy';
-    const PORT = process.env.PORT || 5050; // Allow dynamic port assignment
-    console.log(PORT);
 
-    // List of Event Types to log to the console. See OpenAI Realtime API Documentation. (session.updated is handled separately.)
-    const LOG_EVENT_TYPES = [
-        'response.content.done',
-        'rate_limits.updated',
-        'response.done',
-        'input_audio_buffer.committed',
-        'input_audio_buffer.speech_stopped',
-        'input_audio_buffer.speech_started',
-        'session.created'
-    ];
-
-    fastify.get('/', async (request, reply) => {
-        reply.send({ message: 'Twilio Media Stream Server is running!' });
-    });
-    try{
-        fastify.all('/incoming-call', async (request, reply) => {
-            console.log("here");
-            const twimlResponse = `<?xml version="1.0" encoding="UTF-8"?>
-            <Response>
-            <Say>Please wait while we connect your call to the A. I. voice assistant, powered by Twilio and the Open-A.I. Realtime API</Say>
-            <Pause length="1"/>
-            <Say>O.K. you can start talking!</Say>
-            <Connect>
-            <Stream url="wss://phone-voicemail-bot-production.up.railway.app/media-stream" />
-            </Connect>
-            </Response>`;
+    
+    let callerId = ''
+    fastify.all('/incoming-call', async (request, reply) => {
+        console.log("here");
+        callerId = request.body.Caller;
+        try{
+            const twimlResponse = getTwimlResponse("You are being transferred to Tim's AI Assistant", request)
             reply.type('text/xml').send(twimlResponse);
-        });   
-    }
-    catch(err){
-        console.log(err);
-        
-    }
-    // WebSocket route for media-stream
+        }
+        catch(err){
+            console.log(err);
+        }
+    });   
+    
     fastify.register(async (fastify) => {
         fastify.get('/media-stream', { websocket: true }, (connection, req) => {
-            console.log('Client connected');
-            let streamSid = null;
-
-            const openAiWs = new OpenAIWS(OPENAI_KEY);
-            openAiWs.onOpen();
-            openAiWs.onMsg(connection);
-
-            // Handle incoming messages from Twilio
-            connection.on('message', (message) => {
-                try {
-                    const data = JSON.parse(message);
-                    switch (data.event) {
-                        case 'media':
-                            if (openAiWs.ws.readyState === WebSocket.OPEN) {
-                                const audioAppend = {
-                                    type: 'input_audio_buffer.append',
-                                    audio: data.media.payload
-                                };
-                                const reply = JSON.stringify(audioAppend)
-                                console.log(reply);
-                                openAiWs.send(reply);
-                            }
-                            break;
-                        case 'start':
-                            streamSid = data.start.streamSid;
-                            console.log('Incoming stream has started', streamSid);
-                            break;
-                        default:
-                            console.log('Received non-media event:', data.event);
-                            break;
-                    }
-                } catch (error) {
-                    console.error('Error parsing message:', error, 'Message:', message);
-                }
-            });
-            // Handle connection close
-            connection.on('close', () => {
-                if (openAiWs.ws.readyState === WebSocket.OPEN) openAiWs.close();
-                console.log('Client disconnected.');
-            });
+            log('Client connected');
             
-            openAiWs.onClose();
-            openAiWs.onError();
+            try{
+                const convo = []
+                let streamSid = null;
+
+                const openAiWs = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01', {
+                    headers: {
+                    Authorization: `Bearer ${OPENAI_KEY}`,
+                    "OpenAI-Beta": "realtime=v1"
+                    }
+                });
+                
+                openAiWs.on('open', () => {
+                    log('Connected to the OpenAI Realtime API');
+                    setTimeout(()=>sendSessionUpdate(openAiWs), 250); 
+                });
+
+                openAiWs.on('message', (messageFromAI) => {
+                    try {
+                        const parsesMessageFromAI = JSON.parse(messageFromAI);
+                        const { type, delta, transcript } = parsesMessageFromAI
+                        if (type === 'response.audio.delta' && delta) {
+                            const audioDelta = {
+                                event: 'media',
+                                streamSid: streamSid,
+                                media: { payload: Buffer.from(delta, 'base64').toString('base64') }
+                            };
+                            connection.send(JSON.stringify(audioDelta));
+                        }
+                        if (type === 'conversation.item.input_audio_transcription.completed'){
+                            log('here');
+                            convo.push({"caller": transcript})
+                        }
+                        if( type === 'response.audio_transcript.done'){
+                            log('here');
+                            convo.push({"AI": transcript})
+                            
+                        }
+
+                    } catch (error) {
+                        console.error('Error processing OpenAI message:', error);
+                    }
+                });
+    
+                connection.on('message', async(messageFromCaller) => {
+                    try {
+                        const parsedMessageFromCaller = JSON.parse(messageFromCaller);
+                        const { event, media, start } = parsedMessageFromCaller
+                        switch (parsedMessageFromCaller.event) {
+                            case 'media':
+                                if (openAiWs.readyState === WebSocket.OPEN) {
+                                    const audioAppend = {
+                                        type: 'input_audio_buffer.append',
+                                        audio: media.payload
+                                    };
+
+                                    const audioAppendStringify = JSON.stringify(audioAppend)
+                                    openAiWs.send(audioAppendStringify);
+                                }
+                                break;
+                            case 'start':
+                                streamSid = start.streamSid;
+                                log('Incoming stream has started ' + streamSid);
+                                break;
+                            case "stop":
+                                await fetch(AgentActionsApi, {
+                                    method: "POST",
+                                    headers: {"Content-Type": "application/json"},
+                                    body: JSON.stringify({convo: convo, callerId: callerId})
+                                })
+                                break;
+                            default:
+                                log('Received non-media event: ' +  event);
+                                break;
+                        }
+                    } catch (error) {
+                        console.error('Error parsing message:', error, 'Message:', messageFromCaller);
+                    }
+                });
+                // Handle connection close
+                connection.on('close', () => {
+                    if (openAiWs.readyState === WebSocket.OPEN) openAiWs.close();
+                    log('Client disconnected.');
+                });
+                // Handle WebSocket close and errors
+                openAiWs.on('close', () => {
+                    log('Disconnected from the OpenAI Realtime API');
+                });
+                openAiWs.on('error', (error) => {
+                    console.error('Error in the OpenAI WebSocket:', error);
+                });
+            }
+            catch(err){
+                log(err);
+                
+            }
         });
     });
 
@@ -117,6 +146,9 @@ try{
         }
         console.log(`Server is listening on port ${PORT}`);
     });
+    const url = await connect({ addr: PORT, authtoken: NGROK_TOKEN }); // Automatically creates a tunnel
+    console.log(`Fastify listening on localhost:${PORT}`);
+    console.log(`Ngrok tunnel available at: ${url.url()}`);
 }
 catch(err){
     console.log(err);
