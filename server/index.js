@@ -8,12 +8,10 @@ import { getTwimlResponse, sendSessionUpdate } from './helper.js';
 try{
 
     const log = (e) => console.log(e);
-    const AgentActionsApi = "http://127.0.0.1:3000";
-
-
+    
+    
     dotenv.config();
-    const { OPENAI_KEY } = process.env;
-    const { NGROK_TOKEN } = process.env
+    const { OPENAI_KEY, NGROK_TOKEN, AGENT_ROUTE } = process.env;
     const PORT = process.env.PORT || 5050; 
     OPENAI_KEY ?? console.error('Missing OpenAI API key. Please set it in the .env file.');
     
@@ -104,7 +102,7 @@ try{
                                 log('Incoming stream has started ' + streamSid);
                                 break;
                             case "stop":
-                                await fetch(AgentActionsApi, {
+                                await fetch(AGENT_ROUTE, {
                                     method: "POST",
                                     headers: {"Content-Type": "application/json"},
                                     body: JSON.stringify({convo: convo, callerId: callerId})
@@ -118,12 +116,10 @@ try{
                         console.error('Error parsing message:', error, 'Message:', messageFromCaller);
                     }
                 });
-                // Handle connection close
                 connection.on('close', () => {
                     if (openAiWs.readyState === WebSocket.OPEN) openAiWs.close();
                     log('Client disconnected.');
                 });
-                // Handle WebSocket close and errors
                 openAiWs.on('close', () => {
                     log('Disconnected from the OpenAI Realtime API');
                 });
@@ -146,7 +142,7 @@ try{
         }
         console.log(`Server is listening on port ${PORT}`);
     });
-    const url = await connect({ addr: PORT, authtoken: NGROK_TOKEN }); // Automatically creates a tunnel
+    const url = await connect({ addr: PORT, authtoken: NGROK_TOKEN }); 
     console.log(`Fastify listening on localhost:${PORT}`);
     console.log(`Ngrok tunnel available at: ${url.url()}`);
 }
